@@ -1,13 +1,14 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 public class LocomotionTechnique : MonoBehaviour
 {
     // Please implement your locomotion technique in this script. 
     public OVRInput.Controller leftController;
     public OVRInput.Controller rightController;
-    [Range(0, 100)] public float translationGain = 0.5f;
+    public float movementSpeed = 10;
     public GameObject hmd;
     [SerializeField] private float leftTriggerValue;    
     [SerializeField] private float rightTriggerValue;
@@ -15,6 +16,10 @@ public class LocomotionTechnique : MonoBehaviour
     [SerializeField] private Vector3 offset;
     [SerializeField] private bool isIndexTriggerDown;
     [SerializeField] private Transform skateboard;
+    [SerializeField] private Transform leftControllerTransform;
+    [SerializeField] private float friction = 0.1f;
+    [SerializeField] private float steerScale = 2f;
+    [SerializeField] private Rigidbody movementRb;
 
 
     /////////////////////////////////////////////////////////
@@ -22,18 +27,40 @@ public class LocomotionTechnique : MonoBehaviour
     public ParkourCounter parkourCounter;
     public string stage;
     public SelectionTaskMeasure selectionTaskMeasure;
+    private float currentSkateboardAngle;
     
     void Start()
     {
-        
+        movementRb = GetComponent<Rigidbody>();
     }
+
+// Add one button (alternative gesture) to increase the friction, so when I press it, the speed is going down but not 0(Breaking function, emergency break)
 
     void Update()
     {
         ////////////////////////////////////////////////////////////////////////////////////////////////////
         // Please implement your LOCOMOTION TECHNIQUE in this script :D.
         leftTriggerValue = OVRInput.Get(OVRInput.Axis1D.PrimaryIndexTrigger, leftController); 
-        rightTriggerValue = OVRInput.Get(OVRInput.Axis1D.PrimaryIndexTrigger, rightController); 
+        rightTriggerValue = OVRInput.Get(OVRInput.Axis1D.PrimaryIndexTrigger, rightController);
+
+        float angle; 
+
+        if (leftTriggerValue > 0.95f)
+        {
+            //angle = Vector3.Angle(leftControllerTransform.up, Vector3.up);
+            angle = (-leftControllerTransform.rotation.eulerAngles.z) * steerScale;
+            if (angle < -90) angle = 180 + angle;
+        }
+        else
+        {
+            angle = 0;
+        }
+
+        if (currentSkateboardAngle != angle)
+        {
+            skateboard.Rotate(Vector3.up, angle - currentSkateboardAngle);
+            currentSkateboardAngle = angle;
+        }
 
         if (rightTriggerValue > 0.95f)
         {
@@ -42,6 +69,7 @@ public class LocomotionTechnique : MonoBehaviour
                 isIndexTriggerDown = true;
                 startPos = (OVRInput.GetLocalControllerPosition(rightController));
             }
+            
             offset = skateboard.forward.normalized *(OVRInput.GetLocalControllerPosition(rightController) - startPos).magnitude;
             Debug.DrawRay(startPos, offset, Color.red, 0.2f);
 
@@ -60,7 +88,10 @@ public class LocomotionTechnique : MonoBehaviour
             }
         }
         //this.transform.position = this.transform.position + (offset) * translationGain;
-        GetComponent<Rigidbody>().AddForce(offset * translationGain); // Don't go through the ground anymore, using physics
+        float currentVelocity = movementRb.velocity.magnitude;
+        movementRb.velocity = skateboard.forward * currentVelocity * (1 - friction * Time.deltaTime); // inscrease friction, speed down
+        movementRb.AddForce(offset * movementSpeed); // Don't go through the ground anymore, using physics
+        
 
 
         ////////////////////////////////////////////////////////////////////////////////
