@@ -30933,6 +30933,7 @@ MonoBehaviour:
   leftController: 1
   rightController: 2
   movementSpeed: 5
+  rotationSpeed: 0.5
   hmd: {fileID: 108388184}
   leftTriggerValue: 0
   rightTriggerValue: 0

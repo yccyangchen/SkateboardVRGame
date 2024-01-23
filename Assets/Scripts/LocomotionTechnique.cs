@@ -9,6 +9,7 @@ public class LocomotionTechnique : MonoBehaviour
     public OVRInput.Controller leftController;
     public OVRInput.Controller rightController;
     public float movementSpeed = 10;
+    public float rotationSpeed;
     public GameObject hmd;
     [SerializeField] private float leftTriggerValue;    
     [SerializeField] private float rightTriggerValue;
@@ -43,32 +44,16 @@ public class LocomotionTechnique : MonoBehaviour
         ////////////////////////////////////////////////////////////////////////////////////////////////////
         // Please implement your LOCOMOTION TECHNIQUE in this script :D.
         float slopeAngle = SlopeAlighment();
-        Debug.LogWarning(slopeAngle);
 
         leftTriggerValue = OVRInput.Get(OVRInput.Axis1D.PrimaryIndexTrigger, leftController); 
         rightTriggerValue = OVRInput.Get(OVRInput.Axis1D.PrimaryIndexTrigger, rightController);
 
-        float steerAngle; 
-
-        if (leftTriggerValue > 0.95f)
-        {
-            //angle = Vector3.Angle(leftControllerTransform.up, Vector3.up);
-            steerAngle = (-leftControllerTransform.rotation.eulerAngles.z) * steerScale;
-            if (steerAngle < -90) steerAngle = 180 + steerAngle;
-        }
-        else
-        {
-            steerAngle = 0;
-        }
-
-        /*if (currentSkateboardAngle != steerAngle)
-        {
-            skateboard.Rotate(skateboard.up, steerAngle - currentSkateboardAngle);
-            currentSkateboardAngle = steerAngle;
-        }*/
+        float steerAngle = OVRInput.Get(OVRInput.Axis2D.PrimaryThumbstick).x;
+        currentSkateboardAngle += steerAngle * Time.deltaTime * rotationSpeed;
         skateboard.rotation = Quaternion.identity;
-        skateboard.Rotate(Vector3.up, steerAngle);
         skateboard.Rotate(skateboard.right, slopeAngle);
+
+        skateboard.Rotate(skateboard.up, currentSkateboardAngle);
 
         if (rightTriggerValue > 0.95f)
         {
