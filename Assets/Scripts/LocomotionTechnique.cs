@@ -20,6 +20,8 @@ public class LocomotionTechnique : MonoBehaviour
     [SerializeField] private float friction = 0.1f;
     [SerializeField] private float steerScale = 2f;
     [SerializeField] private Rigidbody movementRb;
+    [SerializeField] private LayerMask streetLayer;
+    [SerializeField] private float skateboardHeightOffset;
 
 
     /////////////////////////////////////////////////////////
@@ -40,27 +42,33 @@ public class LocomotionTechnique : MonoBehaviour
     {
         ////////////////////////////////////////////////////////////////////////////////////////////////////
         // Please implement your LOCOMOTION TECHNIQUE in this script :D.
+        float slopeAngle = SlopeAlighment();
+        Debug.LogWarning(slopeAngle);
+
         leftTriggerValue = OVRInput.Get(OVRInput.Axis1D.PrimaryIndexTrigger, leftController); 
         rightTriggerValue = OVRInput.Get(OVRInput.Axis1D.PrimaryIndexTrigger, rightController);
 
-        float angle; 
+        float steerAngle; 
 
         if (leftTriggerValue > 0.95f)
         {
             //angle = Vector3.Angle(leftControllerTransform.up, Vector3.up);
-            angle = (-leftControllerTransform.rotation.eulerAngles.z) * steerScale;
-            if (angle < -90) angle = 180 + angle;
+            steerAngle = (-leftControllerTransform.rotation.eulerAngles.z) * steerScale;
+            if (steerAngle < -90) steerAngle = 180 + steerAngle;
         }
         else
         {
-            angle = 0;
+            steerAngle = 0;
         }
 
-        if (currentSkateboardAngle != angle)
+        /*if (currentSkateboardAngle != steerAngle)
         {
-            skateboard.Rotate(Vector3.up, angle - currentSkateboardAngle);
-            currentSkateboardAngle = angle;
-        }
+            skateboard.Rotate(skateboard.up, steerAngle - currentSkateboardAngle);
+            currentSkateboardAngle = steerAngle;
+        }*/
+        skateboard.rotation = Quaternion.identity;
+        skateboard.Rotate(Vector3.up, steerAngle);
+        skateboard.Rotate(skateboard.right, slopeAngle);
 
         if (rightTriggerValue > 0.95f)
         {
@@ -91,7 +99,8 @@ public class LocomotionTechnique : MonoBehaviour
         float currentVelocity = movementRb.velocity.magnitude;
         movementRb.velocity = skateboard.forward * currentVelocity * (1 - friction * Time.deltaTime); // inscrease friction, speed down
         movementRb.AddForce(offset * movementSpeed); // Don't go through the ground anymore, using physics
-        
+
+ 
 
 
         ////////////////////////////////////////////////////////////////////////////////
@@ -103,6 +112,25 @@ public class LocomotionTechnique : MonoBehaviour
                 this.transform.position = parkourCounter.currentRespawnPos;
             }
         }
+    }
+
+    float SlopeAlighment()
+    {
+        RaycastHit hit;
+        // The skateboard slides on only streetLayer, other objects will be ignored.
+        if (Physics.Raycast(hmd.transform.position, Vector3.down, out hit, Mathf.Infinity, streetLayer))
+        {
+            //skateboard.up = hit.normal; // Aligns the skateboard with the street 
+
+            // change height of skateboard
+            Vector3 position = skateboard.position;
+            position.y = hit.point.y + this.skateboardHeightOffset;
+            skateboard.position = position;
+
+            return Vector3.SignedAngle(Vector3.up, hit.normal, Vector3.right);
+        }
+
+        return 0;
     }
 
     void OnTriggerEnter(Collider other)
