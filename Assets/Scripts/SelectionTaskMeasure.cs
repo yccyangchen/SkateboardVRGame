@@ -77,6 +77,7 @@ public class SelectionTaskMeasure : MonoBehaviour
     {
         if (objectT != null)
         {
+            // The rotation of the user's hmd
             objectT.transform.rotation = objectT.transform.rotation * rot;
         }
     }

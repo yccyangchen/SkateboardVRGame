@@ -122,6 +122,7 @@ public class LocomotionTechnique : MonoBehaviour
         {
             if (!selectionTaskMeasure.isCountdown && selectionTaskMeasure.startAllowed)
             {
+                // spawn new t-shape
                 selectionTaskMeasure.isTaskStart = true;
                 selectionTaskMeasure.StartOneTask();
             }
@@ -130,6 +131,7 @@ public class LocomotionTechnique : MonoBehaviour
         {
             if(selectionTaskMeasure.doneAllowed) 
             {
+                // confirm and remove current t-shape
                 selectionTaskMeasure.isTaskStart = false;
                 selectionTaskMeasure.EndOneTask();
             }
@@ -138,6 +140,7 @@ public class LocomotionTechnique : MonoBehaviour
         {
             if (oldHmdRot.HasValue)
             {
+                // rotate t-shape
                 selectionTaskMeasure.ChangeTShapeRotation(hmd.transform.rotation * Quaternion.Inverse(oldHmdRot.Value));
             }
             oldHmdRot = hmd.transform.rotation;
@@ -150,6 +153,7 @@ public class LocomotionTechnique : MonoBehaviour
         {
             if (oldHmdPos.HasValue)
             {
+                // move t-shape
                 selectionTaskMeasure.ChangeTShapePosition(hmd.transform.position - oldHmdPos.Value);
             }
             oldHmdPos = hmd.transform.position;
