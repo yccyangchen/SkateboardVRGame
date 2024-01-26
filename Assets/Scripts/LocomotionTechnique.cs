@@ -19,10 +19,12 @@ public class LocomotionTechnique : MonoBehaviour
     [SerializeField] private Transform skateboard;
     [SerializeField] private Transform leftControllerTransform;
     [SerializeField] private float friction = 0.1f;
+    [SerializeField] private float breakFriction = 0.5f;
     [SerializeField] private float steerScale = 2f;
     [SerializeField] private Rigidbody movementRb;
     [SerializeField] private LayerMask streetLayer;
     [SerializeField] private float skateboardHeightOffset;
+    [SerializeField] private Camera stadionCamera;
 
 
     /////////////////////////////////////////////////////////
@@ -31,6 +33,8 @@ public class LocomotionTechnique : MonoBehaviour
     public string stage;
     public SelectionTaskMeasure selectionTaskMeasure;
     private float currentSkateboardAngle;
+    private Quaternion? oldHmdRot;
+    private Vector3? oldHmdPos;
     
     void Start()
     {
@@ -43,9 +47,27 @@ public class LocomotionTechnique : MonoBehaviour
     {
         ////////////////////////////////////////////////////////////////////////////////////////////////////
         // Please implement your LOCOMOTION TECHNIQUE in this script :D.
+       
+        if(stadionCamera.enabled)
+        {
+            UpdateInteractionTask();
+        }
+        else
+        {
+            UpdateMovement();
+        }
+ 
+
+
+        ////////////////////////////////////////////////////////////////////////////////
+        // These are for the game mechanism.
+    }
+
+    private void UpdateMovement()
+    {
         float slopeAngle = SlopeAlighment();
 
-        leftTriggerValue = OVRInput.Get(OVRInput.Axis1D.PrimaryIndexTrigger, leftController); 
+        leftTriggerValue = OVRInput.Get(OVRInput.Axis1D.PrimaryIndexTrigger, leftController);
         rightTriggerValue = OVRInput.Get(OVRInput.Axis1D.PrimaryIndexTrigger, rightController);
 
         float steerAngle = OVRInput.Get(OVRInput.Axis2D.PrimaryThumbstick).x;
@@ -62,15 +84,15 @@ public class LocomotionTechnique : MonoBehaviour
                 isIndexTriggerDown = true;
                 startPos = (OVRInput.GetLocalControllerPosition(rightController));
             }
-            
-            offset = skateboard.forward.normalized *(OVRInput.GetLocalControllerPosition(rightController) - startPos).magnitude;
+
+            offset = skateboard.forward.normalized * (OVRInput.GetLocalControllerPosition(rightController) - startPos).magnitude;
             Debug.DrawRay(startPos, offset, Color.red, 0.2f);
 
-        // Use the slide velocity to adjust my game (skateboard movement)
-        float slideVelocity = offset.magnitude / Time.deltaTime;
-        Debug.Log("Slide Velocity" + slideVelocity);
+            // Use the slide velocity to adjust my game (skateboard movement)
+            float slideVelocity = offset.magnitude / Time.deltaTime;
+            Debug.Log("Slide Velocity" + slideVelocity);
 
-        //UpdateSkateboardMovement(slideVelocity);
+            //UpdateSkateboardMovement(slideVelocity);
         }
         else
         {
@@ -82,21 +104,74 @@ public class LocomotionTechnique : MonoBehaviour
         }
         //this.transform.position = this.transform.position + (offset) * translationGain;
         float currentVelocity = movementRb.velocity.magnitude;
-        movementRb.velocity = skateboard.forward * currentVelocity * (1 - friction * Time.deltaTime); // inscrease friction, speed down
+        movementRb.velocity = skateboard.forward * currentVelocity * (1 - GetFriction() * Time.deltaTime); // inscrease friction, speed down
         movementRb.AddForce(offset * movementSpeed); // Don't go through the ground anymore, using physics
 
- 
-
-
-        ////////////////////////////////////////////////////////////////////////////////
-        // These are for the game mechanism.
-        if (OVRInput.Get(OVRInput.Button.Two) || OVRInput.Get(OVRInput.Button.Four))
+        if (OVRInput.Get(OVRInput.Button.Four))
         {
             if (parkourCounter.parkourStart)
             {
                 this.transform.position = parkourCounter.currentRespawnPos;
             }
         }
+    }
+
+    private void UpdateInteractionTask()
+    {
+        if (OVRInput.Get(OVRInput.Button.One))
+        {
+            if (!selectionTaskMeasure.isCountdown && selectionTaskMeasure.startAllowed)
+            {
+                selectionTaskMeasure.isTaskStart = true;
+                selectionTaskMeasure.StartOneTask();
+            }
+        }
+        if (OVRInput.Get(OVRInput.Button.Two))
+        {
+            if(selectionTaskMeasure.doneAllowed) 
+            {
+                selectionTaskMeasure.isTaskStart = false;
+                selectionTaskMeasure.EndOneTask();
+            }
+        }
+        if (OVRInput.Get(OVRInput.Button.Three))
+        {
+            if (oldHmdRot.HasValue)
+            {
+                selectionTaskMeasure.ChangeTShapeRotation(hmd.transform.rotation * Quaternion.Inverse(oldHmdRot.Value));
+            }
+            oldHmdRot = hmd.transform.rotation;
+        }
+        else
+        {
+            oldHmdRot = null;
+        }
+        if (OVRInput.Get(OVRInput.Button.Four))
+        {
+            if (oldHmdPos.HasValue)
+            {
+                selectionTaskMeasure.ChangeTShapePosition(hmd.transform.position - oldHmdPos.Value);
+            }
+            oldHmdPos = hmd.transform.position;
+        }
+        else
+        {
+            oldHmdPos = null;
+        }
+    }
+
+    public void ShowStadionCamera(bool enabled)
+    {
+        stadionCamera.enabled = enabled;
+    }
+
+    float GetFriction() 
+    {
+        if (OVRInput.Get(OVRInput.Button.Three))
+        {
+            return breakFriction;
+        }
+        return friction;
     }
 
     float SlopeAlighment()
@@ -129,6 +204,9 @@ public class LocomotionTechnique : MonoBehaviour
         }
         else if (other.CompareTag("objectInteractionTask"))
         {
+            // TODO: stop skateboard
+            ShowStadionCamera(true);
+            movementRb.velocity = Vector3.zero;
             selectionTaskMeasure.isTaskStart = true;
             selectionTaskMeasure.scoreText.text = "";
             selectionTaskMeasure.partSumErr = 0f;

@@ -22,11 +22,15 @@ public class SelectionTaskMeasure : MonoBehaviour
     public Vector3 manipulationError;
     public float taskTime;
     public GameObject taskUI;
+    public GameObject stadiumPos;
     public ParkourCounter parkourCounter;
     public DataRecording dataRecording;
     private int part;
     public float partSumTime;
     public float partSumErr;
+    public bool startAllowed = true;
+    public bool doneAllowed = false;
+    public LocomotionTechnique locomotionTechnique;
 
 
     // Start is called before the first frame update
@@ -58,18 +62,37 @@ public class SelectionTaskMeasure : MonoBehaviour
 
     public void StartOneTask()
     {
+        startAllowed = false;
+        doneAllowed = true;
         taskTime = 0f;
         taskStartPanel.SetActive(false);
         donePanel.SetActive(true);
-        objectTStartingPos = taskUI.transform.position + taskUI.transform.forward * 0.5f + taskUI.transform.up * 0.75f;
-        targetTStartingPos = taskUI.transform.position + taskUI.transform.forward * 0.75f + taskUI.transform.up * 1.2f;
+        objectTStartingPos = stadiumPos.transform.position + new Vector3(Random.Range(-0.25f, 0.25f), Random.Range(-0.1f, 0.1f), Random.Range(-0.25f, 0.25f));
+        targetTStartingPos = stadiumPos.transform.position;
         objectT = Instantiate(objectTPrefab, objectTStartingPos, new Quaternion(Random.Range(0.0f, 1.0f), Random.Range(0.0f, 1.0f), Random.Range(0.0f, 1.0f), Random.Range(0.0f, 1.0f)));
         targerT = Instantiate(targerTPrefab, targetTStartingPos, new Quaternion(Random.Range(0.0f, 1.0f), Random.Range(0.0f, 1.0f), Random.Range(0.0f, 1.0f), Random.Range(0.0f, 1.0f)));
+    }
+
+    public void ChangeTShapeRotation(Quaternion rot)
+    {
+        if (objectT != null)
+        {
+            objectT.transform.rotation = objectT.transform.rotation * rot;
+        }
+    }
+
+    public void ChangeTShapePosition(Vector3 pos)
+    {
+        if (objectT != null)
+        {
+            objectT.transform.position += pos;
+        }
     }
 
     public void EndOneTask()
     {
         donePanel.SetActive(false);
+        doneAllowed = false;
         
         // release
         isTaskEnd = true;
@@ -89,7 +112,7 @@ public class SelectionTaskMeasure : MonoBehaviour
         // Debug.Log("Time: " + taskTime.ToString("F1") + "\nPrecision: " + manipulationError.magnitude.ToString("F1"));
         Destroy(objectT);
         Destroy(targerT);
-        StartCoroutine(Countdown(3f));
+        StartCoroutine(Countdown(0f));
     }
 
     IEnumerator Countdown(float t)
@@ -105,12 +128,14 @@ public class SelectionTaskMeasure : MonoBehaviour
             scoreText.text = "Done Part" + part.ToString();
             part += 1;
             completeCount = 0;
+            locomotionTechnique.ShowStadionCamera(false);
         }
         else
         {
             yield return new WaitForSeconds(t);
             isCountdown = false;
             startPanelText.text = "start";
+            startAllowed = true;
         }
         isCountdown = false;
         yield return 0;
