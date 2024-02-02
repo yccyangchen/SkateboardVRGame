@@ -73,9 +73,9 @@ public class LocomotionTechnique : MonoBehaviour
         float steerAngle = OVRInput.Get(OVRInput.Axis2D.PrimaryThumbstick).x;
         currentSkateboardAngle += steerAngle * Time.deltaTime * rotationSpeed;
         skateboard.rotation = Quaternion.identity;
-        skateboard.Rotate(skateboard.right, slopeAngle);
+        skateboard.Rotate(skateboard.right, slopeAngle, Space.World);
 
-        skateboard.Rotate(skateboard.up, currentSkateboardAngle);
+        skateboard.Rotate(skateboard.up, currentSkateboardAngle,Space.World);
 
         if (rightTriggerValue > 0.95f)
         {

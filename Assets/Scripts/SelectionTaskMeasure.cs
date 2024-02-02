@@ -130,6 +130,7 @@ public class SelectionTaskMeasure : MonoBehaviour
             part += 1;
             completeCount = 0;
             locomotionTechnique.ShowStadionCamera(false);
+            startAllowed = true;
         }
         else
         {
